@@ -11,7 +11,7 @@ Obs = read.csv("Octopod_Observations.csv")
 # Application of the appropriate data storage structure: list, data frame, matrix or array (2 points) ##########
 
 # Example of indexing (2 points)
-# Looking at all S unicirrhus observations from OBIS
+# Looking at all S. unicirrhus observations from OBIS
 Obs[c(1938:1956),]
 
 # Subsetting (2 points)
@@ -30,6 +30,8 @@ osb.type.sp = Obs %>% group_by(Obs.Type, Species) %>%
   summarise(count = length(Species))
 
 # Merge or Join data frames (5 points) #########
+
+b_g = merge.data.frame(Bbairdii, Gver, by = "Obs.Type")
 
 # Custom function(s) (10 points) #############
 # 'if else' statement (10 points)
