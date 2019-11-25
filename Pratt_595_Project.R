@@ -6,9 +6,8 @@
 # https://github.com/abbyp96/Bio595_Project
 
 # Reading-in data (2 points)
+# Application of the appropriate data storage structure: list, data frame, matrix or array (2 points)
 Obs = read.csv("Octopod_Observations.csv")
-
-# Application of the appropriate data storage structure: list, data frame, matrix or array (2 points) ##########
 
 # Example of indexing (2 points)
 # Looking at all S. unicirrhus observations from OBIS
@@ -21,41 +20,37 @@ Muus = Obs[c(1722:1837),]
 Pter = Obs[c(1838:1915),]
 Suni = Obs[c(1916:1956),]
 
-# Ordering (2 points) ######### why is it ordering within species and not across all??????? #############
+# Ordering (2 points) 
 obs_type = Obs[order(Obs$Obs.Type),]
 
-# Summarizing (5 points)
-library(dplyr)
-osb.type.sp = Obs %>% group_by(Obs.Type, Species) %>%
-  summarise(count = length(Species))
-
-# Merge or Join data frames (5 points) #########
-
-b_g = merge.data.frame(Bbairdii, Gver, by = "Obs.Type")
-
-# Custom function(s) (10 points) #############
+# Custom function(s) (10 points) 
 # 'if else' statement (10 points)
 
 Spp.fxn = function(x){
   
-  if(str_detect(string = Obs$Species, pattern = "Bathy")){
-    Species_2 <- "Bathypolypus_bairdii"
+  y <- x$Species
+  
+  if(str_detect(string = y, pattern = "Bathy")){
+    species_2 <- "Bathypolypus_bairdii"
     
-  } else if(str_detect(string = Obs$Species, pattern = "Gran")) {
+  } else if(str_detect(string = y, pattern = "Gran")) {
     species_2 <- "Graneledone_verrucosa"
     
-  } else if(str_detect(string = Obs$Species, pattern = "Muus")) {
+  } else if(str_detect(string = y, pattern = "Muus")) {
     species_2 <- "Muusoctopus_spp"
     
-  } else if(str_detect(string = Obs$Species, pattern = "Pter")) {
+  } else if(str_detect(string = y, pattern = "Pter")) {
     species_2 <- "Pteroctopus_tetracirrhus"
     
-  } else if(str_detect(string = Obs$Species, pattern = "Scae")) {
+  } else if(str_detect(string = y, pattern = "Scae")) {
+    species_2 <- "Scaeurgus_unicirrhus"
+    
+  } else if(str_detect(string = y, pattern = "Scau")) {
     species_2 <- "Scaeurgus_unicirrhus"
     
   } else {}
   
-  return(Obs$Species)
+  return(species_2)
   
 }
 
@@ -65,8 +60,18 @@ library(stringr)
 Obs$species_2 = NA
 
 for(i in 1:nrow(Obs)){
-  Obs[i,]$species_2 <- Spp.fxn(x = d[i,])
+Obs[i,]$species_2 <- Spp.fxn(x = Obs[i,])
 }
+
+
+# Summarizing (5 points)
+library(dplyr)
+osb.type.sp = Obs %>% group_by(Obs.Type, Species) %>%
+  summarise(count = length(Species))
+
+# Merge or Join data frames (5 points) #########
+
+b_g = merge.data.frame(Bbairdii, Gver, by = "Obs.Type")
 
 # Custom operator(s) (10 points)
 #(sort by only caribbean observations based on lats less than ) ######## Is this what is meant by custom 
@@ -80,7 +85,7 @@ carib <- subset(Obs, Lat < 25.06 & Lon < 87.72)
 # Histogram plot (5 points)
 
 library(ggplot2)
-ggplot(Obs, aes(Species)) +
+ggplot(Obs, aes(species_2)) +
   geom_histogram(stat="count")
 
 
@@ -108,16 +113,18 @@ ggmap(map_bb) +
 
 # ‘ddply’ (10 points)
 # Exporting and saving figures from ggplot (2 points) ##########
+library(dplyr)
+library(plyr)
 
-
-ddply(df15, .variables = "species", function(x){
+ddply(Obs, .variables = c("species_2"), function(x){
   
-  name = unique(x$species)
+  x <- na.omit(x)
   
-  map = ggmap(map_bb.f) + 
-    geom_point(data = df15, aes(x = lon, y = lat))+ 
-    ggtitle(paste0(name))
+  name = unique(x$species_2)
   
+  map = ggmap(map_bb) + 
+    geom_point(data = x, aes(x = Lon, y = Lat))+ 
+    ggtitle(name)
   
   ggsave(filename = paste0(name, '.jpg'), plot = map, width = 4, height = 3, units = 'in', dpi = 600)
   
