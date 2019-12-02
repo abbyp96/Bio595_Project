@@ -5,23 +5,22 @@
 # Evidence of version control (5 points)
 # https://github.com/abbyp96/Bio595_Project
 
+# load libraries
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(ggmap)
+library(osmdata)
+
 # Reading-in data (2 points)
 # Application of the appropriate data storage structure: list, data frame, matrix or array (2 points)
-Obs = read.csv("Octopod_Observations.csv")
+obs = read.csv("Octopod_Observations.csv", header=T, na.strings=c("","NA"))
+str(obs)
+obs_depth = read.csv("Octopod_Observations_depth.csv", header=T, na.strings=c("","NA"))
 
-# Example of indexing (2 points)
-# Looking at all S. unicirrhus observations from OBIS
-Obs[c(1938:1956),]
 
-# Subsetting (2 points)
-Bbairdii = Obs[c(1:1533),]
-Gver = Obs[c(1534:1721),]
-Muus = Obs[c(1722:1837),]
-Pter = Obs[c(1838:1915),]
-Suni = Obs[c(1916:1956),]
-
-# Ordering (2 points) 
-obs_type = Obs[order(Obs$Obs.Type),]
+# Adding Species Names ----------------------------------------------------
 
 # Custom function(s) (10 points) 
 # 'if else' statement (10 points)
@@ -54,69 +53,83 @@ Spp.fxn = function(x){
   
 }
 
-# ‘for loop’ (10 points) ##############
+# ‘for loop’ (10 points) 
 
-library(stringr)
-Obs$species_2 = NA
+obs$species_2 = NA
 
-for(i in 1:nrow(Obs)){
-Obs[i,]$species_2 <- Spp.fxn(x = Obs[i,])
+for(i in 1:nrow(obs)){
+  obs[i,]$species_2 <- Spp.fxn(x = obs[i,])
 }
+
+obs_depth$species_2 = NA
+
+for(i in 1:nrow(obs_depth)){
+  obs_depth[i,]$species_2 <- Spp.fxn(x = obs_depth[i,])
+}
+
+obs$Species = NULL
+obs_depth$Species = NULL
+obs$Source = NULL
+obs_depth$Source = NULL
+
+
+# Merging and Subsetting --------------------------------------------------
+
+#Merge or Join data frames (5 points)
+obs$seq = seq(1,nrow(obs),1)
+obs_depth$seq = seq(1,nrow(obs_depth),1)
+obs_dll = merge(obs, obs_depth, by = c("seq","Obs.Type", "species_2"))
+
+# Subsetting (2 points)
+obs_dll = obs_dll[complete.cases(obs_dll), ]
+
+# Ordering (2 points) 
+obs_type = obs[order(obs$Obs.Type),]
+
+# Example of indexing (2 points)
+# Looking at all S. unicirrhus observations from OBIS
+obs[c(1938:1956),]
+
+# Ordering (2 points) 
+obs_type = obs[order(obs$obs.Type),]
+
+# Custom operator(s) (10 points)
+#(sort by only caribbean observations based on lats less than)
+# Exporting data set (2 points)
+
+carib <- subset(obs, Lat < 25.06 & Lon < 87.72)
+write.csv(carib, file="Caribbean_Obs.csv")
 
 
 # Summarizing (5 points)
-library(dplyr)
-osb.type.sp = Obs %>% group_by(Obs.Type, Species) %>%
-  summarise(count = length(Species))
-
-# Merge or Join data frames (5 points) #########
-
-b_g = merge.data.frame(Bbairdii, Gver, by = "Obs.Type")
-
-# Custom operator(s) (10 points)
-#(sort by only caribbean observations based on lats less than ) ######## Is this what is meant by custom 
-# operators??????? #########################################
-
-carib <- subset(Obs, Lat < 25.06 & Lon < 87.72)
-
-# Reshaping data with ‘melt’ and/or ‘dcast’ (5 points)
-
+osb.type.sp = obs %>% group_by(Obs.Type, species_2) %>%
+  summarise(count = length(species_2))
+osb.type.sp
 
 # Histogram plot (5 points)
-
-library(ggplot2)
-ggplot(Obs, aes(species_2)) +
+ggplot(obs, aes(species_2)) +
   geom_histogram(stat="count")
 
 
 # Point, bar, or line plot (whichever makes the most sense) (5 points)
-
-
-# ‘ggplot’ with at least 2 geoms (e.g. point, bar, tile), use one of the ‘scale_’ geoms, and adjusting the
-# theme of the plot (10 points)
-
-
+obs_dll$Depth = as.character(obs_dll$Depth)
+obs_dll$Depth = as.numeric(obs_dll$Depth)
+ggplot(obs_dll, aes(species_2, Depth)) + 
+  geom_boxplot()
 
 # A map of showing the geographic location where the data was collected (10 points)
-
-library(tidyverse)
-library(ggmap)
-library(osmdata)
 bb = c(left = -98, bottom = 7.5, 
        right = -50, top = 55.5)
 map_bb = get_stamenmap(bb, zoom = 6, map = 'terrain-background')
 ggmap(map_bb) + 
-  geom_point(data = Obs, aes(x = Lon, y = Lat))
-
-# Exporting data set (2 points) ############
-
+  geom_point(data = obs, aes(x = Lon, y = Lat))
 
 # ‘ddply’ (10 points)
-# Exporting and saving figures from ggplot (2 points) ##########
+# Exporting and saving figures from ggplot (2 points)
 library(dplyr)
 library(plyr)
 
-ddply(Obs, .variables = c("species_2"), function(x){
+ddply(obs, .variables = c("species_2"), function(x){
   
   x <- na.omit(x)
   
